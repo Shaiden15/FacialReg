@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Scan QR Code{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Scan QR Code</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
+                    <div id="qr-reader-results" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    function onScanSuccess(decodedText, decodedResult) {
+        // Handle the scanned code here
+        console.log(`Code scanned = ${decodedText}`, decodedResult);
+        document.getElementById('qr-reader-results').innerHTML = `
+            <div class="alert alert-success">
+                Successfully scanned QR code!<br>
+                <strong>Module ID:</strong> ${decodedText}
+            </div>
+        `;
+        
+        // Here you would typically send this data to your server
+        // For example:
+        // fetch('/mark-attendance', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //     },
+        //     body: JSON.stringify({ module_id: decodedText })
+        // })
+    }
+
+    function onScanFailure(error) {
+        // Handle scan failure
+        console.warn(`QR error = ${error}`);
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader",
+        { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        },
+        /* verbose= */ false
+    );
+    
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+</script>
+{% endblock %}
+
+{% endblock %}

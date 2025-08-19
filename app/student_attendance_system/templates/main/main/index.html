@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Student Attendance System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">Welcome to Student Attendance System</h1>
+            <p class="lead mb-4">Please log in to access your dashboard.</p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-4 me-sm-3">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="fas fa-user-plus me-2"></i>Register
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

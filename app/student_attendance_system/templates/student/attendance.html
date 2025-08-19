@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}My Attendance - Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>My Attendance</h2>
+    
+    <!-- Module Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-8">
+                    <select name="module_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Modules</option>
+                        {% for module in modules %}
+                        <option value="{{ module.id }}" {% if request.args.get('module_id')|int == module.id %}selected{% endif %}>
+                            {{ module.code }} - {{ module.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Statistics -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Attendance Summary</h5>
+            
+            {% if attendance_stats %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Module</th>
+                                <th>Classes Attended</th>
+                                <th>Total Classes</th>
+                                <th>Attendance %</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in attendance_stats %}
+                            <tr>
+                                <td>
+                                    <strong>{{ stat.module.code }}</strong><br>
+                                    <small class="text-muted">{{ stat.module.name }}</small>
+                                </td>
+                                <td>{{ stat.attended }}</td>
+                                <td>{{ stat.total_classes }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar {% if stat.percentage >= 80 %}bg-success{% elif stat.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             role="progressbar" 
+                                             style="width: {{ stat.percentage }}%" 
+                                             aria-valuenow="{{ stat.percentage }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ stat.percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if stat.percentage >= 80 %}
+                                        <span class="badge bg-success">Good Standing</span>
+                                    {% elif stat.percentage >= 50 %}
+                                        <span class="badge bg-warning text-dark">Warning</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">At Risk</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    No attendance records found for the selected module.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

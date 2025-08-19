@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - FRAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-template">
+                <h1>Oops!</h1>
+                <h2>500 Server Error</h2>
+                <div class="error-details">
+                    We're sorry, but something went wrong on our end.
+                </div>
+                <div class="mt-4">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-home"></i> Return Home
+                    </a>
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-lg ms-2">
+                        <i class="fas fa-arrow-left"></i> Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

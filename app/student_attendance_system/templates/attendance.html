@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Take Attendance - FRAS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Take Attendance</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        <video id="video" width="640" height="480" autoplay class="img-fluid"></video>
+                    </div>
+                    <button onclick="captureAndSend()" class="btn btn-primary btn-lg">
+                        <i class="fas fa-camera"></i> Capture
+                    </button>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
+{% endblock %}

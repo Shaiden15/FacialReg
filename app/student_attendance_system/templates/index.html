@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Student Attendance System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">Welcome to Facial Recognition Attendance System</h1>
+            
+            {% if current_user.is_authenticated %}
+                <div class="d-grid gap-3">
+                    {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary btn-lg">Admin Dashboard</a>
+                    {% elif current_user.role == 'lecturer' %}
+                        <a href="{{ url_for('lecturer.dashboard') }}" class="btn btn-primary btn-lg">Lecturer Dashboard</a>
+                    {% else %}
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary btn-lg">Student Dashboard</a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-outline-primary btn-lg">Register</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - FRAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Welcome back, {{ current_user.first_name }}!</h2>
+            <p class="text-muted mb-0">Here's your daily overview</p>
+        </div>
+        <a href="{{ url_for('student.scan_qr') }}" class="btn btn-primary">
+            <i class="fas fa-qrcode me-1"></i> Scan QR Code
+        </a>
+    </div>
+
+    <!-- Today's Classes -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Today's Classes</h5>
+        </div>
+        <div class="card-body p-0">
+            {% set today = now.date() %}
+            {% set today_classes = [] %}
+            
+            {% for class in upcoming_classes %}
+                {% if class.date == today %}
+                    {% set _ = today_classes.append(class) %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if today_classes %}
+                <div class="list-group list-group-flush">
+                    {% for class in today_classes %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ class.module.name }}</h6>
+                                    <p class="mb-0 text-muted">
+                                        <i class="far fa-clock me-1"></i> 
+                                        {{ class.start_time.strftime('%I:%M %p') }} - {{ class.end_time.strftime('%I:%M %p') }}
+                                        <span class="mx-2">•</span>
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ class.location or 'Room TBD' }}
+                                    </p>
+                                </div>
+                                <div>
+                                    {% set attendance = class.attendances|selectattr('enrollment.student_id', 'equalto', current_user.id)|first %}
+                                    {% if attendance %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i> Present
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="far fa-clock me-1"></i> Pending
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">No classes scheduled for today</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Upcoming Classes -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Upcoming Classes</h5>
+                    <a href="{{ url_for('student.list_classes') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if upcoming_classes %}
+                        <div class="list-group list-group-flush">
+                            {% for class in upcoming_classes[:5] %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <h6 class="mb-1">{{ class.module.name }}</h6>
+                                            <p class="mb-0 text-muted">
+                                                <i class="far fa-calendar me-1"></i> 
+                                                {{ class.date.strftime('%A, %b %d') }}
+                                                <span class="mx-2">•</span>
+                                                <i class="far fa-clock me-1"></i>
+                                                {{ class.start_time.strftime('%I:%M %p') }}
+                                                <span class="mx-1">-</span>
+                                                {{ class.end_time.strftime('%I:%M %p') }}
+                                            </p>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="mb-1">
+                                                {% set attendance = class.attendances|selectattr('enrollment.student_id', 'equalto', current_user.id)|first %}
+                                                {% if attendance %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle me-1"></i> Present
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-light text-muted border">
+                                                        <i class="far fa-clock me-1"></i> Upcoming
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ class.location or 'Room TBD' }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-0">No upcoming classes found</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Attendance Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% if attendance_stats %}
+                        {% for stat in attendance_stats %}
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="fw-medium">{{ stat.module.code }}</span>
+                                    <span class="text-muted">{{ stat.attended }}/{{ stat.total_classes }}</span>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    {% set width = (stat.attended / stat.total_classes * 100) if stat.total_classes > 0 else 0 %}
+                                    <div class="progress-bar {% if width >= 80 %}bg-success{% elif width >= 60 %}bg-info{% else %}bg-warning{% endif %}" 
+                                         role="progressbar"
+                                         data-width="{{ width|round|int }}"
+                                         aria-valuenow="{{ width|round|int }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <div class="text-end mt-1">
+                                    <small class="text-muted">{{ stat.percentage|round(1) }}%</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('student.view_attendance') }}" class="btn btn-sm btn-outline-primary">
+                                View Detailed Attendance
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-3">No attendance records found</p>
+                            <p class="small text-muted">Your attendance will appear here after attending classes.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Recent Activity</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if recent_activity %}
+                <div class="list-group list-group-flush">
+                    {% for activity in recent_activity %}
+                        <div class="list-group-item">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" 
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-{{ 'check-circle text-success' if activity.type == 'attendance' else 'info-circle text-primary' }}"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1">
+                                            {% if activity.type == 'attendance' %}
+                                                Attendance Marked
+                                            {% else %}
+                                                {{ activity.title }}
+                                            {% endif %}
+                                        </h6>
+                                        <small class="text-muted">{{ activity.time_ago }}</small>
+                                    </div>
+                                    <p class="mb-0 text-muted">
+                                        {{ activity.description }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">No recent activity</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize progress bars on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.progress-bar[data-width]').forEach(bar => {
+            const width = bar.dataset.width + '%';
+            bar.style.width = width;
+        });
+    });
+    // Any additional JavaScript for the student dashboard can go here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+{% endblock %}

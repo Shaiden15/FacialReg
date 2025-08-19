@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}My Modules - Lecturer Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>My Modules</h2>
+        <a href="#" class="btn btn-primary" onclick="alert('Module creation not implemented yet')">
+            <i class="fas fa-plus"></i> Add New Module
+        </a>
+    </div>
+
+    {% if modules %}
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for module in modules %}
+            <div class="col">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ module.code }} - {{ module.name }}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ module.credit }} Credits</h6>
+                        <p class="card-text">{{ module.description or 'No description available.' }}</p>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-info">
+                                {{ module.classes|length }} Classes
+                            </span>
+                            <div>
+                                <a href="{{ url_for('lecturer.list_classes', module_id=module.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    View Classes
+                                </a>
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        onclick="alert('Module editing not implemented yet')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            You don't have any modules assigned yet. 
+            <a href="#" class="alert-link" onclick="alert('Module creation not implemented yet')">Create your first module</a>.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

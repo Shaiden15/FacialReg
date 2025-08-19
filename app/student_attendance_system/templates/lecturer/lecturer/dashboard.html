@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Lecturer Dashboard - FRAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Welcome, {{ current_user.first_name }}</h2>
+        <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> New Class
+        </a>
+    </div>
+
+    <!-- Today's Schedule -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Today's Schedule</h5>
+        </div>
+        <div class="card-body p-0">
+            {% set today = now.date() %}
+            {% set today_classes = [] %}
+            
+            {% for class in upcoming_classes %}
+                {% if class.date == today %}
+                    {% set _ = today_classes.append(class) %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if today_classes %}
+                <div class="list-group list-group-flush">
+                    {% for class in today_classes %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ class.module.name }}</h6>
+                                    <p class="mb-0 text-muted">
+                                        <i class="far fa-clock me-1"></i> 
+                                        {{ class.start_time.strftime('%I:%M %p') }} - {{ class.end_time.strftime('%I:%M %p') }}
+                                    </p>
+                                </div>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('lecturer.view_attendance', class_id=class.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-clipboard-check me-1"></i> Attendance
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-secondary qr-button" 
+                                            data-class-id="{{ class.id }}">
+                                        <i class="fas fa-qrcode me-1"></i> QR Code
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">No classes scheduled for today</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Upcoming Classes -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Upcoming Classes</h5>
+            <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body p-0">
+            {% if upcoming_classes %}
+                <div class="list-group list-group-flush">
+                    {% for class in upcoming_classes[:5] %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ class.module.name }}</h6>
+                                    <p class="mb-0 text-muted">
+                                        <i class="far fa-calendar me-1"></i> 
+                                        {{ class.date.strftime('%A, %b %d, %Y') }}
+                                        <span class="mx-2">•</span>
+                                        <i class="far fa-clock me-1"></i>
+                                        {{ class.start_time.strftime('%I:%M %p') }} - {{ class.end_time.strftime('%I:%M %p') }}
+                                    </p>
+                                </div>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('lecturer.view_attendance', class_id=class.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-clipboard-check me-1"></i> Attendance
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted mb-0">No upcoming classes found</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Your Modules -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Your Modules</h5>
+                    <a href="{{ url_for('lecturer.list_modules') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if modules %}
+                        <div class="list-group list-group-flush">
+                            {% for module in modules[:4] %}
+                                <a href="{{ url_for('lecturer.list_classes', module_id=module.id) }}" 
+                                   class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ module.code }} - {{ module.name }}</h6>
+                                        <span class="badge bg-primary rounded-pill">
+                                            {{ module.classes|length }} classes
+                                        </span>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ module.enrollments|length }} students enrolled
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted mb-3">You don't have any modules assigned yet.</p>
+                            <a href="{{ url_for('admin.list_modules') }}" class="btn btn-sm btn-outline-primary">
+                                Request Module Assignment
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-4">
+                            <div class="p-3 border rounded">
+                                <h2 class="text-primary mb-0">{{ modules|length }}</h2>
+                                <small class="text-muted">Modules</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-4">
+                            <div class="p-3 border rounded">
+                                <h2 class="text-success mb-0">
+                                    {{ upcoming_classes|length }}
+                                </h2>
+                                <small class="text-muted">Upcoming Classes</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <h2 class="text-info mb-0">
+                                    {{ total_students }}
+                                </h2>
+                                <small class="text-muted">Total Students</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 border rounded">
+                                <h2 class="text-warning mb-0">
+                                    {{ recent_attendance|length }}
+                                </h2>
+                                <small class="text-muted">Recent Attendance</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Class QR Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qrcode" class="mb-3">
+                    <p class="text-muted">Generating QR code...</p>
+                </div>
+                <p class="text-muted small">
+                    Students can scan this code to mark their attendance.
+                    Code expires in 15 minutes.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadQR">
+                    <i class="fas fa-download me-1"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let qrModal = new bootstrap.Modal(document.getElementById('qrModal'));
+    let currentQRCode = null;
+
+    // Handle QR button clicks with event delegation
+    document.addEventListener('click', function(event) {
+        const qrButton = event.target.closest('.qr-button');
+        if (qrButton) {
+            const classId = qrButton.dataset.classId;
+            if (classId) {
+                generateQR(parseInt(classId, 10));
+            }
+        }
+    });
+
+    function generateQR(classId) {
+        // Show loading state
+        document.getElementById('qrcode').innerHTML = '<p class="text-muted">Generating QR code...</p>';
+        
+        // Make API call to generate QR code
+        fetch(`/api/classes/${classId}/qrcode`)
+            .then(response => response.json())
+            .then(data => {
+                // Display QR code
+                document.getElementById('qrcode').innerHTML = 
+                    `<img src="data:image/png;base64,${data.qr_code}" class="img-fluid" alt="QR Code">`;
+                
+                // Set up download button
+                document.getElementById('downloadQR').onclick = function() {
+                    const link = document.createElement('a');
+                    link.href = `data:image/png;base64,${data.qr_code}`;
+                    link.download = `attendance-qr-${classId}.png`;
+                    link.click();
+                };
+                
+                // Show the modal
+                qrModal.show();
+                
+                // Auto-refresh before expiry
+                setTimeout(() => {
+                    if (qrModal._element.classList.contains('show')) {
+                        generateQR(classId);
+                    }
+                }, (data.expires_in - 60) * 1000); // Refresh 1 minute before expiry
+            })
+            .catch(error => {
+                console.error('Error generating QR code:', error);
+                document.getElementById('qrcode').innerHTML = 
+                    '<p class="text-danger">Error generating QR code. Please try again.</p>';
+            });
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('qrModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            qrModal.hide();
+        }
+    });
+</script>
+{% endblock %}
