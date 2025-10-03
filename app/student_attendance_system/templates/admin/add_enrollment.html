@@ -1,0 +1,76 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Add New Enrollment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Add New Enrollment</h1>
+        <a href="{{ url_for('admin.list_enrollments') }}" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Back to Enrollments
+        </a>
+    </div>
+
+    <!-- Content Row -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Enrollment Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin.add_enrollment') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="form-group">
+                            <label for="student_id">Student</label>
+                            <select class="form-control" id="student_id" name="student_id" required>
+                                <option value="">Select a student...</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}">{{ student.first_name }} {{ student.last_name }} ({{ student.student_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="module_id">Module</label>
+                            <select class="form-control" id="module_id" name="module_id" required>
+                                <option value="">Select a module...</option>
+                                {% for module in modules %}
+                                <option value="{{ module.id }}">{{ module.code }} - {{ module.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Enrollment
+                            </button>
+                            <a href="{{ url_for('admin.list_enrollments') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Initialize any JavaScript components if needed
+    $(document).ready(function() {
+        // Initialize select2 for better dropdown experience
+        if ($.fn.select2) {
+            $('#student_id, #module_id').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        }
+    });
+</script>
+{% endblock %}

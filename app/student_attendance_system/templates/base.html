@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Facial Recognition Attendance System{% endblock %}</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -16,7 +17,9 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') }}">FRAS</a>
+            <a class="navbar-brand {% if request.endpoint == 'main.index' %}mx-auto text-center w-100{% endif %}" href="{{ url_for('main.index') }}">
+                Your Attendance matters
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -34,6 +37,9 @@
                                 <a class="nav-link" href="{{ url_for('admin.list_modules') }}">Modules</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('main.profile') }}">Profile</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('admin.list_enrollments') }}">Enrollments</a>
                             </li>
                         {% elif current_user.role == 'lecturer' %}
@@ -45,6 +51,11 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{{ url_for('lecturer.list_classes') }}">Classes</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('lecturer.add_class') }}">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Class
+                                </a>
                             </li>
                         {% else %}
                             <li class="nav-item">
@@ -65,7 +76,7 @@
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-user-circle me-1"></i> {{ current_user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -75,12 +86,14 @@
                             </ul>
                         </li>
                     {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
-                        </li>
+                        {% if request.endpoint != 'main.index' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
             </div>
@@ -101,6 +114,9 @@
         {% endwith %}
     </div>
 
+    <!-- Pre Main Content -->
+    {% block pre_main %}{% endblock %}
+
     <!-- Main Content -->
     <main class="container my-4">
         {% block content %}{% endblock %}
@@ -109,7 +125,7 @@
     <!-- Footer -->
     <footer class="bg-light text-center text-lg-start mt-5">
         <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
-            © {{ now.year }} Facial Recognition Attendance System
+            &copy; {{ now.year }} Facial Recognition Attendance System
         </div>
     </footer>
 

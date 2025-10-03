@@ -1,22 +1,217 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome - Student Attendance System{% endblock %}
+{% block title %}Welcome - Facial Recognition Attendance System{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Glass modal style */
+  .modal-glass .modal-content {
+    background: rgba(17, 24, 39, 0.65);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .modal-glass .btn-close {
+    filter: invert(1);
+  }
+  .modal-glass iframe { border: 0; border-radius: 12px; }
+</style>
+{% endblock %}
+
+{% block pre_main %}{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <h1 class="display-4 mb-4">Welcome to Student Attendance System</h1>
-            <p class="lead mb-4">Please log in to access your dashboard.</p>
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg px-4 me-sm-3">
-                    <i class="fas fa-sign-in-alt me-2"></i>Login
-                </a>
-                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg px-4">
-                    <i class="fas fa-user-plus me-2"></i>Register
-                </a>
-            </div>
+<section class="container my-5">
+  <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
+    <div class="row g-0 align-items-stretch">
+      <div class="col-12 col-md-6">
+        <img src="{{ url_for('static', filename='images/dut-hero.jpg') }}" alt="Campus" class="img-fluid w-100 h-100" style="object-fit: cover; min-height: 260px;">
+      </div>
+      <div class="col-12 col-md-6 d-flex">
+        <div class="p-4 p-md-5 d-flex flex-column justify-content-center w-100">
+          <div class="hero-eyebrow mb-2">Durban University of Technology</div>
+          <h1 class="h3 fw-bold mb-2">Facial Recognition Attendance</h1>
+          <p class="text-muted mb-4">Fast, secure check‑ins using QR and live face verification. Built for students, lecturers and admins.</p>
+          <div>
+            {% if current_user.is_authenticated %}
+              {% if current_user.role == 'student' %}
+                <a href="{{ url_for('student.dashboard') }}" class="btn btn-primary"><i class="fas fa-house me-2"></i>Open Dashboard</a>
+              {% elif current_user.role == 'lecturer' %}
+                <a href="{{ url_for('lecturer.dashboard') }}" class="btn btn-primary"><i class="fas fa-chalkboard-teacher me-2"></i>Open Dashboard</a>
+              {% else %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-primary"><i class="fas fa-gauge-high me-2"></i>Open Dashboard</a>
+              {% endif %}
+            {% else %}
+              <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#authLoginModal">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+              </button>
+              <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#authRegisterModal">
+                <i class="fas fa-user-plus me-2"></i>Register
+              </button>
+            {% endif %}
+          </div>
         </div>
+      </div>
     </div>
-</div>
+  </div>
+
+  <div class="row g-3 mt-3">
+    <div class="col-12 col-md-4">
+      <div class="card mini-card shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="icon-circle mb-2"><i class="fas fa-qrcode"></i></div>
+          <h6 class="mb-1">QR + Face</h6>
+          <p class="text-muted mb-0">Accurate check‑ins.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card mini-card shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="icon-circle mb-2"><i class="fas fa-mobile-screen-button"></i></div>
+          <h6 class="mb-1">Mobile‑First</h6>
+          <p class="text-muted mb-0">Works on any device.</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card mini-card shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="icon-circle mb-2"><i class="fas fa-lock"></i></div>
+          <h6 class="mb-1">Secure</h6>
+          <p class="text-muted mb-0">Role‑based access.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+  <!-- Auth Modals -->
+  <div class="modal fade modal-glass" id="authLoginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="fas fa-sign-in-alt me-2"></i>Login</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <form method="POST" action="{{ url_for('auth.login') }}">
+            {{ login_form.hidden_tag() }}
+            <div class="mb-3">
+              {{ login_form.username.label(class="form-label") }}
+              {{ login_form.username(class="form-control") }}
+              {% if login_form.username.errors %}
+                <div class="text-warning small mt-1">
+                  {% for error in login_form.username.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              {{ login_form.password.label(class="form-label") }}
+              {{ login_form.password(class="form-control") }}
+              {% if login_form.password.errors %}
+                <div class="text-warning small mt-1">
+                  {% for error in login_form.password.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="mb-3 form-check">
+              {{ login_form.remember(class="form-check-input", id="loginRemember") }}
+              <label class="form-check-label" for="loginRemember">Remember Me</label>
+            </div>
+            <div class="d-grid">
+              {{ login_form.submit(class="btn btn-primary") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade modal-glass" id="authRegisterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Register</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-0">
+          <form method="POST" action="{{ url_for('auth.register') }}">
+            {{ register_form.hidden_tag() }}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                {{ register_form.first_name.label(class="form-label") }}
+                {{ register_form.first_name(class="form-control") }}
+                {% if register_form.first_name.errors %}
+                  <div class="text-warning small mt-1">
+                    {% for error in register_form.first_name.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                {{ register_form.last_name.label(class="form-label") }}
+                {{ register_form.last_name(class="form-control") }}
+                {% if register_form.last_name.errors %}
+                  <div class="text-warning small mt-1">
+                    {% for error in register_form.last_name.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="mb-3">
+              {{ register_form.username.label(class="form-label") }}
+              {{ register_form.username(class="form-control", autocomplete="new-username") }}
+              {% if register_form.username.errors %}
+                <div class="text-warning small mt-1">
+                  {% for error in register_form.username.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="mb-3">
+              {{ register_form.email.label(class="form-label") }}
+              {{ register_form.email(class="form-control") }}
+              {% if register_form.email.errors %}
+                <div class="text-warning small mt-1">
+                  {% for error in register_form.email.errors %}{{ error }}{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                {{ register_form.password.label(class="form-label") }}
+                {{ register_form.password(class="form-control", autocomplete="new-password") }}
+                {% if register_form.password.errors %}
+                  <div class="text-warning small mt-1">
+                    {% for error in register_form.password.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              <div class="col-md-6 mb-3">
+                {{ register_form.confirm_password.label(class="form-label") }}
+                {{ register_form.confirm_password(class="form-control", autocomplete="new-password") }}
+                {% if register_form.confirm_password.errors %}
+                  <div class="text-warning small mt-1">
+                    {% for error in register_form.confirm_password.errors %}{{ error }}{% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Role</label>
+              <div class="form-control-plaintext fw-bold text-primary">Student</div>
+              {{ register_form.role(type="hidden", value="student") }}
+              <div class="form-text text-light">All new registrations are created as student accounts.</div>
+            </div>
+            <div class="d-grid">
+              {{ register_form.submit(class="btn btn-primary") }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

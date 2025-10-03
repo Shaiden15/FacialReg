@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}QR Code - {{ class_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Attendance QR Code</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title">{{ class_name }}</h5>
+                    <p class="text-muted">Class Time: {{ class_session.start_time.strftime('%H:%M') }} - {{ class_session.end_time.strftime('%H:%M') }}</p>
+                    
+                    <div class="my-4">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid" style="max-width: 300px;">
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This QR code will expire in <strong id="countdown">{{ time_remaining }}</strong>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-1"></i> Back to Classes
+                        </a>
+                        <button onclick="window.print()" class="btn btn-outline-primary">
+                            <i class="fas fa-print me-1"></i> Print
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update countdown every second
+    const countdownElement = document.getElementById('countdown');
+    let timeRemaining = '{{ time_remaining }}';
+    let [minutes, seconds] = timeRemaining.split(':').map(Number);
+    
+    const countdown = setInterval(function() {
+        if (seconds === 0) {
+            if (minutes === 0) {
+                clearInterval(countdown);
+                countdownElement.textContent = 'Expired';
+                return;
+            }
+            minutes--;
+            seconds = 59;
+        } else {
+            seconds--;
+        }
+        
+        countdownElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    }, 1000);
+    
+    // Check if QR code is expired
+    const expiry = new Date('{{ expiry.isoformat() }}').getTime();
+    const now = new Date().getTime();
+    
+    if (expiry < now) {
+        countdownElement.textContent = 'Expired';
+        clearInterval(countdown);
+    }
+});
+</script>
+{% endblock %}

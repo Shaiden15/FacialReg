@@ -1,8 +1,9 @@
 import os
 from app.student_attendance_system import create_app
+from flask_cors import CORS
 
 app = create_app()
-
+CORS(app)
 if __name__ == "__main__":
     # Set up the upload folder if it doesn't exist
     upload_folder = os.path.join('app', 'student_attendance_system', 'static', 'uploads')

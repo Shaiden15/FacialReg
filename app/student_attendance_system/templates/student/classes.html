@@ -1,13 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}My Classes - Student Dashboard{% endblock %}
+{% block title %}My Classes{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>My Class Schedule</h2>
+    <!-- Hero Panel -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #4e73df, #6a8cf0); color:#fff; border-radius:16px;">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+            <div class="mb-3 mb-md-0">
+                <div class="hero-eyebrow mb-2" style="background: rgba(255,255,255,0.15); color:#fff;">Student</div>
+                <h2 class="mb-1 text-white">My Class Schedule</h2>
+                <p class="mb-0" style="opacity:.9;">Filter your modules and review upcoming classes.</p>
+            </div>
+        </div>
+    </div>
     
     <!-- Module Filter -->
-    <div class="card mb-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter</h5>
+        </div>
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-8">
@@ -25,9 +37,14 @@
     </div>
 
     <!-- Upcoming Classes -->
-    <div class="card">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fa-regular fa-calendar-days me-2"></i>Upcoming Classes</h5>
+            {% if selected_module %}
+                <span class="badge bg-light text-dark">Filtered</span>
+            {% endif %}
+        </div>
         <div class="card-body">
-            <h5 class="card-title mb-4">Upcoming Classes</h5>
             
             {% if classes %}
                 <div class="table-responsive">
@@ -54,8 +71,13 @@
                                 </td>
                                 <td>{{ class.location or 'TBA' }}</td>
                                 <td>
-                                    {% set attendance = class.attendance_for(current_user) %}
-                                    {% if attendance %}
+                                    {% set attendance = namespace(found=false) %}
+                                    {% for att in class.attendances %}
+                                        {% if att.enrollment.student_id == current_user.id %}
+                                            {% set attendance.found = true %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if attendance.found %}
                                         <span class="badge bg-success">Present</span>
                                     {% else %}
                                         <span class="badge bg-warning text-dark">Not Marked</span>

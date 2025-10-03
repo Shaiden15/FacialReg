@@ -1,13 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}My Attendance - Student Dashboard{% endblock %}
+{% block title %}My Attendance{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>My Attendance</h2>
+    <!-- Hero Panel -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #4e73df, #6a8cf0); color:#fff; border-radius:16px;">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+            <div class="mb-3 mb-md-0">
+                <div class="hero-eyebrow mb-2" style="background: rgba(255,255,255,0.15); color:#fff;">Student</div>
+                <h2 class="mb-1 text-white">My Attendance</h2>
+                <p class="mb-0" style="opacity:.9;">Track your attendance across modules and terms.</p>
+            </div>
+        </div>
+    </div>
     
     <!-- Module Filter -->
-    <div class="card mb-4">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter</h5>
+        </div>
         <div class="card-body">
             <form method="get" class="row g-3">
                 <div class="col-md-8">
@@ -25,9 +37,11 @@
     </div>
 
     <!-- Attendance Statistics -->
-    <div class="card">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance Summary</h5>
+        </div>
         <div class="card-body">
-            <h5 class="card-title mb-4">Attendance Summary</h5>
             
             {% if attendance_stats %}
                 <div class="table-responsive">

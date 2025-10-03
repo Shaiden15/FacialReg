@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Scan QR Code{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Panel -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #4e73df, #6a8cf0); color:#fff; border-radius:16px;">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+            <div class="mb-3 mb-md-0">
+                <div class="hero-eyebrow mb-2" style="background: rgba(255,255,255,0.15); color:#fff;">Student</div>
+                <h2 class="mb-1 text-white">Scan QR Code</h2>
+                <p class="mb-0" style="opacity:.9;">Use your camera to scan the class QR and proceed to face verification.</p>
+            </div>
+        </div>
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-info-circle me-3 mt-1" style="font-size: 1.25rem;"></i>
+                    <div>
+                        <h5 class="alert-heading">Attendance Instructions</h5>
+                        <ul class="mb-0">
+                            <li>QR code scanning is only available for 30 minutes after the class start time</li>
+                            <li>Scans within the first 15 minutes will be marked as <strong>Present</strong></li>
+                            <li>Scans between 15-30 minutes will be marked as <strong>Late</strong></li>
+                            <li>After 30 minutes, please see your lecturer to mark attendance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-qrcode me-2"></i>Scan QR Code for Attendance</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div id="camera-container" class="mb-4">
+                        <video id="qr-video" width="100%" style="max-width: 500px;" autoplay playsinline></video>
+                    </div>
+                    <div id="result" class="mb-3"></div>
+                    <div id="error" class="alert alert-danger d-none"></div>
+                    
+                    <div class="d-grid gap-2">
+                        <button id="startButton" class="btn btn-primary btn-lg">
+                            <i class="fas fa-qrcode me-2"></i> Start Camera
+                        </button>
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for redirection -->
+<form id="verifyForm" method="GET" action="{{ url_for('student.facial_recognition') }}" class="d-none">
+    <input type="hidden" id="classIdInput" name="class_id">
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('qr-video');
+    const startButton = document.getElementById('startButton');
+    const resultDiv = document.getElementById('result');
+    const errorDiv = document.getElementById('error');
+    let stream = null;
+    let scanning = false;
+    
+    // Function to start the camera
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { 
+                    width: { ideal: 1280 },
+                    facingMode: 'environment' 
+                },
+                audio: false
+            });
+            
+            video.srcObject = stream;
+            startButton.disabled = true;
+            startButton.innerHTML = '<i class="fas fa-sync fa-spin me-2"></i> Scanning...';
+            scanning = true;
+            
+            // Start scanning
+            scanQRCode();
+            
+        } catch (err) {
+            console.error('Error accessing camera:', err);
+            showError('Could not access the camera. Please ensure you have granted camera permissions.');
+            startButton.disabled = false;
+        }
+    }
+    
+    // Function to scan for QR codes
+    function scanQRCode() {
+        if (!scanning) return;
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        // Set canvas size to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw video frame to canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Get image data
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        
+        // Use jsQR to detect QR code
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'dontInvert',
+        });
+        
+        if (code) {
+            // Check if the QR code contains a valid class ID
+            const classId = code.data;
+            if (classId) {
+                // Stop scanning
+                stopCamera();
+                
+                // Redirect to facial recognition with class ID
+                document.getElementById('classIdInput').value = classId;
+                document.getElementById('verifyForm').submit();
+                return;
+            }
+        }
+        
+        // Continue scanning
+        requestAnimationFrame(scanQRCode);
+    }
+    
+    // Function to stop the camera
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        scanning = false;
+    }
+    
+    // Function to show error messages
+    function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.classList.remove('d-none');
+    }
+    
+    // Event listeners
+    startButton.addEventListener('click', startCamera);
+    
+    // Clean up on page unload
+    window.addEventListener('beforeunload', stopCamera);
+});
+</script>
+{% endblock %}

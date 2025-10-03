@@ -1,14 +1,14 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import qrcode
 from io import BytesIO
 import base64
 import os
 
 from ..extensions import db
-from ..models.database import Module, Class, Attendance, Enrollment, User
+from ..models.database import Module, Class, Attendance, Enrollment, User, db
 from ..utils import allowed_file
 
 bp = Blueprint('lecturer', __name__)
@@ -89,16 +89,17 @@ def view_attendance(class_id):
                          enrollments=enrollments,
                          attendance_records=attendance_records)
 
-@bp.route('/class/<int:class_id>/qr_code')
+@bp.route('/classes/<int:class_id>/qrcode')
 @login_required
 def generate_qr_code(class_id):
     class_session = Class.query.get_or_404(class_id)
     
     if class_session.module.lecturer_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
+        flash('You are not authorized to generate QR codes for this class', 'danger')
+        return redirect(url_for('lecturer.list_classes'))
     
-    # Generate QR code data
-    qr_data = f"attendance:{class_id}:{datetime.utcnow().timestamp()}"
+    # Generate QR code data using class's start time
+    qr_data = f"attendance:{class_id}:{int(datetime.combine(class_session.date, class_session.start_time).timestamp())}"
     
     # Create QR code
     qr = qrcode.QRCode(
@@ -117,16 +118,70 @@ def generate_qr_code(class_id):
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
     
-    # Set QR code expiry (15 minutes from now)
-    expiry_time = datetime.utcnow() + timedelta(minutes=15)
+    # Set QR code expiry (15 minutes from class start time)
+    class_start_datetime = datetime.combine(class_session.date, class_session.start_time)
+    expiry_time = class_start_datetime + timedelta(minutes=15)
     class_session.qr_code = qr_data
     class_session.qr_expiry = expiry_time
     db.session.commit()
     
-    return jsonify({
-        'qr_code': img_str,
-        'expiry': expiry_time.isoformat()
-    })
+    # Calculate time remaining
+    time_remaining = expiry_time - datetime.utcnow()
+    minutes, seconds = divmod(time_remaining.seconds, 60)
+    
+    return render_template('lecturer/qr_code.html',
+                         qr_code=img_str,
+                         expiry=expiry_time,
+                         time_remaining=f"{minutes}:{seconds:02d}",
+                         class_name=f"{class_session.module.code} - {class_session.module.name}",
+                         class_session=class_session)
+
+@bp.route('/classes/add', methods=['GET', 'POST'])
+@login_required
+def add_class():
+    if current_user.role != 'lecturer':
+        flash('Access denied. Lecturer access required.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Get lecturer's modules for the dropdown
+    modules = Module.query.filter_by(lecturer_id=current_user.id).all()
+    
+    if request.method == 'POST':
+        try:
+            module_id = request.form.get('module_id')
+            class_date = datetime.strptime(request.form.get('class_date'), '%Y-%m-%d').date()
+            start_time = datetime.strptime(request.form.get('start_time'), '%H:%M').time()
+            end_time = datetime.strptime(request.form.get('end_time'), '%H:%M').time()
+            
+            # Generate a random 7-character code (uppercase and digits)
+            import random
+            import string
+            qr_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=7))
+            
+            # Set QR expiry to 5 minutes from now
+            qr_expiry = datetime.utcnow() + timedelta(minutes=5)
+            
+            # Create new class
+            new_class = Class(
+                module_id=module_id,
+                date=class_date,
+                start_time=start_time,
+                end_time=end_time,
+                qr_code=qr_code,
+                qr_expiry=qr_expiry
+            )
+            
+            db.session.add(new_class)
+            db.session.commit()
+            
+            flash('Class added successfully!', 'success')
+            return redirect(url_for('lecturer.list_classes'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding class: {str(e)}', 'danger')
+    
+    return render_template('lecturer/add_class.html', modules=modules)
 
 @bp.route('/api/attendance/scan', methods=['POST'])
 @login_required

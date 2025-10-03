@@ -2,6 +2,11 @@
 
 {% block title %}Scan QR Code - FRAS{% endblock %}
 
+{% block head %}
+{{ super() }}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
 {% block extra_css %}
 <style>
     #scanner-container {
@@ -123,58 +128,91 @@
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const canvasCtx = canvas.getContext('2d');
+    // Enable willReadFrequently for better performance with getImageData
+    const context = canvas.getContext('2d', { willReadFrequently: true });
     const statusDiv = document.getElementById('status');
     const switchCameraBtn = document.getElementById('switch-camera');
     const toggleTorchBtn = document.getElementById('toggle-torch');
-    const manualCodeInput = document.getElementById('manual-code');
-    const submitManualBtn = document.getElementById('submit-manual');
-    
     let stream = null;
     let currentFacingMode = 'environment';
-    let torchOn = false;
+    let processing = false;
     let scanning = false;
-    
+
     // Initialize camera
     async function initCamera(facingMode = 'environment') {
         try {
+            // Stop any existing stream
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
             
-            stream = await navigator.mediaDevices.getUserMedia({
+            // Try with exact facing mode first
+            const constraints = {
                 video: { 
                     facingMode: { exact: facingMode },
                     width: { ideal: 1280 },
                     height: { ideal: 720 }
                 },
                 audio: false
-            });
+            };
+            
+            // Try with exact facing mode first
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (exactError) {
+                console.log('Exact facing mode failed, trying without exact constraint');
+                // If exact facing mode fails, try without the exact constraint
+                constraints.video = {
+                    facingMode: facingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+            }
             
             video.srcObject = stream;
-            await video.play();
+            video.setAttribute('playsinline', true);
             
-            // Enable camera controls
+            // Enable buttons after camera starts
             switchCameraBtn.disabled = false;
-            toggleTorchBtn.disabled = !('torch' in stream.getVideoTracks()[0].getSettings());
+            toggleTorchBtn.disabled = false;
             
-            // Start scanning
-            scanQRCode();
+            // Set canvas dimensions to match video stream
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    scanning = true;
+                    showStatus('Ready to scan', 'muted');
+                    scanQRCode();
+                    resolve();
+                };
+                video.play().catch(e => {
+                    console.error('Error playing video:', e);
+                    showStatus('Error starting camera. Please refresh the page and allow camera access.', 'danger');
+                });
+            });
             
         } catch (err) {
             console.error('Error accessing camera:', err);
-            statusDiv.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Unable to access camera. Please make sure you've granted camera permissions.
-                </div>
-            `;
+            showStatus(`Error accessing camera: ${err.message || 'Please ensure you have granted camera permissions and try again.'}`, 'danger');
+            
+            // If environment camera fails, try user-facing camera as fallback
+            if (facingMode === 'environment') {
+                showStatus('Trying front camera...', 'warning');
+                setTimeout(() => initCamera('user'), 1000);
+            } else if (facingMode === 'user') {
+                // If both cameras failed, show final error
+                showStatus('Could not access any camera. Please check your device settings and refresh the page.', 'danger');
+            }
         }
     }
     
     // Toggle between front and back camera
     switchCameraBtn.addEventListener('click', () => {
         currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        scanning = false;
         initCamera(currentFacingMode);
     });
     
@@ -185,110 +223,238 @@ document.addEventListener('DOMContentLoaded', function() {
         const track = stream.getVideoTracks()[0];
         try {
             await track.applyConstraints({
-                advanced: [{ torch: !torchOn }]
+                advanced: [{ torch: !track.getSettings().torch }]
             });
-            torchOn = !torchOn;
             toggleTorchBtn.innerHTML = `
-                <i class="fas ${torchOn ? 'fa-sun' : 'fa-lightbulb'} me-1"></i>
-                ${torchOn ? 'Turn Off' : 'Turn On'} Torch
+                <i class="fas fa-${track.getSettings().torch ? 'sun' : 'lightbulb'} me-1"></i>
+                ${track.getSettings().torch ? 'Turn Off' : 'Turn On'} Torch
             `;
         } catch (err) {
             console.error('Error toggling torch:', err);
-        }
-    });
-    
-    // Submit manual code
-    submitManualBtn.addEventListener('click', () => {
-        const code = manualCodeInput.value.trim();
-        if (code) {
-            processQRCode(code);
-        } else {
-            showStatus('Please enter a valid code', 'warning');
+            // Fallback for browsers that don't support torch
+            toggleTorchBtn.disabled = true;
+            toggleTorchBtn.title = 'Torch not supported on this device';
         }
     });
     
     // Process QR code
-    function processQRCode(code) {
-        if (scanning) return;
-        scanning = true;
+    async function processQRCode(code) {
+        if (processing) return;
+        processing = true;
         
-        // Show loading state
-        showStatus('Processing attendance...', 'info');
-        
-        // Simulate API call
-        fetch('/api/attendance/scan', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ qr_data: code })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showStatus(`Attendance recorded for ${data.class_name}`, 'success');
-            } else {
-                showStatus(data.message || 'Error processing attendance', 'danger');
+        try {
+            // Show loading state
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `
+                <div class="d-flex justify-content-center align-items-center">
+                    <div class="spinner-border text-primary me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Verifying QR code...</span>
+                </div>
+            `;
+            
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showStatus('Error processing attendance. Please try again.', 'danger');
-        })
-        .finally(() => {
-            // Resume scanning after a delay
+            
+            // Send QR code data to server for validation
+            const response = await fetch('{{ url_for("student.scan_qr_validation") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ qr_data: code })
+            });
+
+            // Check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Expected JSON response, got:', text);
+                throw new Error('Invalid response from server');
+            }
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || `Server error: ${response.status} ${response.statusText}`);
+            }
+            
+            if (data.redirect_url) {
+                // Stop camera before redirecting
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                window.location.href = data.redirect_url;
+                return;
+            } else if (data.success && data.class_id) {
+                // If no redirect_url but success is true and we have a class_id
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                window.location.href = `/student/facial-recognition/${data.class_id}`;
+                return;
+            }
+            
+            showStatus(data.message || 'QR code processed', 'success');
+            
+        } catch (error) {
+            console.error('QR code processing error:', error);
+            let errorMessage = 'An error occurred while processing the QR code';
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+            showStatus(errorMessage, 'danger');
+        } finally {
+            processing = false;
+            
+            // Re-enable scanning after a short delay
             setTimeout(() => {
-                scanning = false;
-                showStatus('Ready to scan', 'muted');
-            }, 3000);
-        });
-    }
-    
-    // Show status message
-    function showStatus(message, type = 'muted') {
-        const icon = {
-            'success': 'check-circle',
-            'danger': 'exclamation-circle',
-            'warning': 'exclamation-triangle',
-            'info': 'info-circle',
-            'muted': 'qrcode'
-        }[type];
-        
-        statusDiv.innerHTML = `
-            <div class="alert alert-${type} mb-0">
-                <i class="fas fa-${icon} me-2"></i>
-                ${message}
-            </div>
-        `;
+                scanning = true;
+                if (video && video.readyState >= 2) {
+                    requestAnimationFrame(scanQRCode);
+                }
+            }, 2000);
+        }
     }
     
     // Scan for QR codes
     function scanQRCode() {
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvasCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = canvasCtx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: 'dontInvert',
-            });
-            
-            if (code && !scanning) {
-                processQRCode(code.data);
-            }
+        if (!scanning) {
+            console.log('Scanning is paused');
+            return;
         }
         
-        if (!scanning) {
-            requestAnimationFrame(scanQRCode);
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            // Ensure video is playing and has valid dimensions
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                console.log('Video not ready, waiting...');
+                requestAnimationFrame(scanQRCode);
+                return;
+            }
+            
+            // Update canvas dimensions to match video
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                console.log(`Canvas resized to ${canvas.width}x${canvas.height}`);
+            }
+            
+            try {
+                // Draw video frame to canvas
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Get image data from canvas
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Try to detect QR code
+                const code = jsQR(
+                    imageData.data,    // Image data
+                    imageData.width,   // Width
+                    imageHeight = imageData.height,  // Height
+                    {
+                        inversionAttempts: 'attemptBoth',
+                        canOverwriteImage: false
+                    }
+                );
+                
+                // If QR code is found and we're not already processing
+                if (code && code.data && code.data.trim() !== '' && !processing) {
+                    console.log('Valid QR code detected:', {
+                        data: code.data,
+                        location: code.location
+                    });
+                    
+                    // Draw a green rectangle around the QR code for visual feedback
+                    if (code.location) {
+                        const { topLeftCorner, topRightCorner, bottomRightCorner, bottomLeftCorner } = code.location;
+                        context.beginPath();
+                        context.moveTo(topLeftCorner.x, topLeftCorner.y);
+                        context.lineTo(topRightCorner.x, topRightCorner.y);
+                        context.lineTo(bottomRightCorner.x, bottomRightCorner.y);
+                        context.lineTo(bottomLeftCorner.x, bottomLeftCorner.y);
+                        context.lineTo(topLeftCorner.x, topLeftCorner.y);
+                        context.lineWidth = 4;
+                        context.strokeStyle = '#00FF00';
+                        context.stroke();
+                    }
+                    
+                    // Only process if we have valid data
+                    if (code.data && code.data.trim() !== '') {
+                        processQRCode(code.data);
+                    } else {
+                        console.warn('Empty QR code data detected, ignoring...');
+                        // Continue scanning
+                        requestAnimationFrame(scanQRCode);
+                    }
+                    return;
+                } else if (code && (!code.data || code.data.trim() === '')) {
+                    console.warn('Empty or invalid QR code data detected');
+                    // Continue scanning
+                    requestAnimationFrame(scanQRCode);
+                    return;
+                }
+            } catch (e) {
+                console.error('Error in QR detection:', e);
+            }
+        } else {
+            console.log('Video not ready, current readyState:', video.readyState);
         }
+        
+        // Continue scanning
+        requestAnimationFrame(scanQRCode);
     }
     
-    // Initialize
-    initCamera();
+    // Show status message in the UI
+    function showStatus(message, type = 'info') {
+        const statusElement = document.getElementById('status');
+        if (!statusElement) return;
+        
+        // Map type to Bootstrap alert classes
+        const typeClasses = {
+            'info': 'alert-info',
+            'success': 'alert-success',
+            'danger': 'alert-danger',
+            'warning': 'alert-warning',
+            'muted': 'text-muted'
+        };
+        
+        // Remove all alert classes
+        statusElement.className = '';
+        statusElement.classList.add('alert', typeClasses[type] || 'alert-info');
+        statusElement.textContent = message;
+    }
+    
+    
+    // Initialize camera with error handling
+    initCamera().catch(err => {
+        console.error('Failed to initialize camera:', err);
+        showStatus('Failed to initialize camera. Please check permissions and refresh the page.', 'danger');
+    });
+    
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            // Pause scanning when tab is not active
+            scanning = false;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        } else if (!stream) {
+            // Resume scanning when tab becomes active again
+            initCamera(currentFacingMode);
+        }
+    });
     
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {
+        scanning = false;
         if (stream) {
             stream.getTracks().forEach(track => track.stop());
         }

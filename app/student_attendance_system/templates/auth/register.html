@@ -40,7 +40,7 @@
                         {{ form.username.label(class="form-label") }}
                         <div class="input-group">
                             <span class="input-group-text">@</span>
-                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), autocomplete="new-username", readonly="true") }}
                         </div>
                         {% if form.username.errors %}
                             <div class="invalid-feedback d-block">
@@ -63,7 +63,7 @@
                     </div>
                     <div class="mb-3">
                         {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), autocomplete="new-password", readonly="true") }}
                         {% if form.password.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.password.errors %}
@@ -74,7 +74,7 @@
                     </div>
                     <div class="mb-3">
                         {{ form.confirm_password.label(class="form-label") }}
-                        {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else "")) }}
+                        {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else ""), autocomplete="new-password", readonly="true") }}
                         {% if form.confirm_password.errors %}
                             <div class="invalid-feedback">
                                 {% for error in form.confirm_password.errors %}
@@ -84,15 +84,10 @@
                         {% endif %}
                     </div>
                     <div class="mb-3">
-                        {{ form.role.label(class="form-label") }}
-                        {{ form.role(class="form-select" + (" is-invalid" if form.role.errors else "")) }}
-                        {% if form.role.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.role.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <label class="form-label">Role</label>
+                        <div class="form-control-plaintext fw-bold text-primary">Student</div>
+                        {{ form.role(type="hidden", value="student") }}
+                        <div class="form-text text-muted">All new registrations are created as student accounts.</div>
                     </div>
                     <div class="d-grid">
                         {{ form.submit(class="btn btn-primary") }}
@@ -109,6 +104,28 @@
 
 {% block extra_js %}
 <script>
+    // Clear autofill and make fields editable on focus
+    document.addEventListener('DOMContentLoaded', function() {
+        const fields = ['username', 'password', 'confirm_password'];
+        
+        fields.forEach(function(fieldName) {
+            const field = document.querySelector(`[name="${fieldName}"]`);
+            if (field) {
+                // Clear any autofilled values
+                field.value = '';
+                
+                // Remove readonly on focus and click
+                field.addEventListener('focus', function() {
+                    this.removeAttribute('readonly');
+                });
+                
+                field.addEventListener('click', function() {
+                    this.removeAttribute('readonly');
+                });
+            }
+        });
+    });
+    
     // Client-side password confirmation
     document.querySelector('form').addEventListener('submit', function(e) {
         const password = document.getElementById('password').value;

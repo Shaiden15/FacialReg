@@ -1,23 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}Student Dashboard - FRAS{% endblock %}
+{% block title %}Student Dashboard{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2>Welcome back, {{ current_user.first_name }}!</h2>
-            <p class="text-muted mb-0">Here's your daily overview</p>
+    {% if not has_face_registered %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Face Registration Required</h5>
+                <p class="mb-0">You need to register your face to use facial recognition for attendance. This only takes a few seconds!</p>
+            </div>
         </div>
-        <a href="{{ url_for('student.scan_qr') }}" class="btn btn-primary">
-            <i class="fas fa-qrcode me-1"></i> Scan QR Code
-        </a>
+        <div class="mt-3 text-end">
+            <a href="{{ url_for('student.register_face') }}" class="btn btn-warning">
+                <i class="fas fa-user-plus me-2"></i> Register Face Now
+            </a>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <!-- Hero Panel -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #4e73df, #6a8cf0); color:#fff; border-radius:16px;">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+            <div class="mb-3 mb-md-0">
+                <div class="hero-eyebrow mb-2" style="background: rgba(255,255,255,0.15); color:#fff;">Student</div>
+                <h2 class="mb-1 text-white">Welcome back, {{ current_user.first_name }}!</h2>
+                <p class="mb-0" style="opacity:.9;">Quickly check in, review classes, and track your attendance.</p>
+            </div>
+            <div>
+                <a href="{{ url_for('student.scan_qr') }}" class="btn btn-light btn-lg"><i class="fas fa-qrcode me-2"></i>Scan QR</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <a href="{{ url_for('student.list_classes') }}" class="text-decoration-none">
+                <div class="card mini-card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle mb-2"><i class="fas fa-book"></i></div>
+                        <h6 class="mb-1">My Classes</h6>
+                        <p class="text-muted mb-0">View schedule & details</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a href="{{ url_for('student.view_attendance') }}" class="text-decoration-none">
+                <div class="card mini-card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle mb-2"><i class="fas fa-chart-line"></i></div>
+                        <h6 class="mb-1">Attendance</h6>
+                        <p class="text-muted mb-0">See your progress</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a href="{{ url_for('student.register_face') }}" class="text-decoration-none">
+                <div class="card mini-card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle mb-2"><i class="fas fa-user-check"></i></div>
+                        <h6 class="mb-1">Register Face</h6>
+                        <p class="text-muted mb-0">Enable fast check‑ins</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- Today's Classes -->
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Today's Classes</h5>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fa-regular fa-calendar-days me-2"></i>Today's Classes</h5>
         </div>
         <div class="card-body p-0">
             {% set today = now.date() %}
@@ -72,9 +131,9 @@
         <!-- Upcoming Classes -->
         <div class="col-lg-8 mb-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Upcoming Classes</h5>
-                    <a href="{{ url_for('student.list_classes') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fa-regular fa-calendar-days me-2"></i>Upcoming Classes</h5>
+                    <a href="{{ url_for('student.list_classes') }}" class="btn btn-sm btn-outline-light"><i class="fas fa-list me-1"></i>View All</a>
                 </div>
                 <div class="card-body p-0">
                     {% if upcoming_classes %}
@@ -127,8 +186,8 @@
         <!-- Attendance Summary -->
         <div class="col-lg-4 mb-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Attendance Summary</h5>
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Attendance Summary</h5>
                 </div>
                 <div class="card-body">
                     {% if attendance_stats %}
@@ -171,8 +230,8 @@
 
     <!-- Recent Activity -->
     <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Recent Activity</h5>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-clock-rotate-left me-2"></i>Recent Activity</h5>
         </div>
         <div class="card-body p-0">
             {% if recent_activity %}

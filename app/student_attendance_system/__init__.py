@@ -46,6 +46,12 @@ def create_app(config_name='default'):
     
     # Import User after db initialization to avoid circular imports
     from .models.database import User
+    from datetime import datetime
+    
+    # Make current year available in all templates
+    @app.context_processor
+    def inject_now():
+        return {'now': datetime.utcnow()}
     
     @login_manager.user_loader
     def load_user(user_id):

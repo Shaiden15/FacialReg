@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Facial Recognition - FRAS{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Verify Your Identity</h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please position your face in the frame for attendance verification.
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="video-container" style="position: relative; display: inline-block;">
+                            <video id="video" width="640" height="480" autoplay class="img-fluid rounded border"></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                            <div id="overlay" class="face-overlay"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="status" class="mb-3">
+                        <div class="spinner-border text-primary d-none" id="spinner" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <div id="message" class="alert d-none"></div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button id="captureBtn" class="btn btn-primary btn-lg">
+                            <i class="fas fa-camera me-2"></i> Verify Identity
+                        </button>
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for attendance submission -->
+<form id="attendanceForm" method="POST" action="{{ url_for('student.mark_attendance') }}" class="d-none">
+    <input type="hidden" name="class_id" value="{{ class_id }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const spinner = document.getElementById('spinner');
+    const messageDiv = document.getElementById('message');
+    const attendanceForm = document.getElementById('attendanceForm');
+    let stream = null;
+    
+    // Access webcam
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: 640, 
+            height: 480,
+            facingMode: 'user'
+        } 
+    })
+    .then(s => {
+        stream = s;
+        video.srcObject = stream;
+        captureBtn.disabled = false;
+    })
+    .catch(err => {
+        console.error('Camera access failed:', err);
+        showMessage('Error accessing camera: ' + err.message, 'danger');
+    });
+    
+    captureBtn.addEventListener('click', function() {
+        // Set canvas size to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        
+        // Draw current frame from video
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Show loading state
+        captureBtn.disabled = true;
+        spinner.classList.remove('d-none');
+        
+        // Convert canvas to blob and send to server
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('image', blob, 'face.jpg');
+            
+            // First verify face
+            fetch("{{ url_for('student.verify_face') }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Identity verified! Marking attendance...', 'success');
+                    
+                    // Submit the attendance form
+                    return fetch(attendanceForm.action, {
+                        method: 'POST',
+                        body: new URLSearchParams(new FormData(attendanceForm)),
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-CSRFToken': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    });
+                } else {
+                    throw new Error(data.message || 'Face verification failed');
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Attendance marked successfully!', 'success');
+                    // Redirect to dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('student.dashboard') }}";
+                    }, 2000);
+                } else {
+                    throw new Error(data.message || 'Failed to mark attendance');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage(error.message || 'An error occurred. Please try again.', 'danger');
+                captureBtn.disabled = false;
+            })
+            .finally(() => {
+                spinner.classList.add('d-none');
+            });
+        }, 'image/jpeg', 0.9);
+    });
+    
+    function showMessage(text, type) {
+        messageDiv.textContent = text;
+        messageDiv.className = `alert alert-${type} d-block`;
+    }
+    
+    // Clean up video stream when leaving the page
+    window.addEventListener('beforeunload', function() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    });
+});
+</script>
+
+<style>
+.face-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 3px solid rgba(13, 110, 253, 0.5);
+    border-radius: 8px;
+    pointer-events: none;
+    box-shadow: 0 0 20px rgba(13, 110, 253, 0.3);
+}
+
+.video-container {
+    position: relative;
+    display: inline-block;
+}
+
+#video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+#canvas {
+    display: none;
+}
+
+.alert {
+    transition: all 0.3s ease;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
+</style>
+{% endblock %}

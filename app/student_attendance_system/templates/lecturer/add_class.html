@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Class - FRAS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Add New Class</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('lecturer.add_class') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <div class="mb-3">
+                            <label for="module_id" class="form-label">Module</label>
+                            <select class="form-select" id="module_id" name="module_id" required>
+                                <option value="" selected disabled>Select a module</option>
+                                {% for module in modules %}
+                                <option value="{{ module.id }}">{{ module.code }} - {{ module.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="class_date" class="form-label">Class Date</label>
+                            <input type="date" class="form-control" id="class_date" name="class_date" 
+                                   min="{{ today }}" required>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_time" class="form-label">Start Time</label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_time" class="form-label">End Time</label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" required>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> A unique QR code will be automatically generated for this class.
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i> Add Class
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Set minimum date to today
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('class_date').min = today;
+        
+        // Set default start time to next hour
+        const now = new Date();
+        const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
+        document.getElementById('start_time').value = 
+            String(nextHour.getHours()).padStart(2, '0') + ':00';
+            
+        // Set default end time to 1 hour after start time
+        const endTime = new Date(nextHour.getTime() + 60 * 60 * 1000);
+        document.getElementById('end_time').value = 
+            String(endTime.getHours()).padStart(2, '0') + ':00';
+    });
+</script>
+{% endblock %}

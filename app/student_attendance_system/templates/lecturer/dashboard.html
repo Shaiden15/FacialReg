@@ -1,20 +1,65 @@
 {% extends "base.html" %}
 
-{% block title %}Lecturer Dashboard - FRAS{% endblock %}
+{% block title %}Lecturer Dashboard{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Welcome, {{ current_user.first_name }}</h2>
-        <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i> New Class
-        </a>
+    <!-- Hero Panel -->
+    <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #4e73df, #6a8cf0); color:#fff; border-radius:16px;">
+        <div class="card-body d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+            <div class="mb-3 mb-md-0">
+                <div class="hero-eyebrow mb-2" style="background: rgba(255,255,255,0.15); color:#fff;">Lecturer</div>
+                <h2 class="mb-1 text-white">Welcome, {{ current_user.first_name }}</h2>
+                <p class="mb-0" style="opacity:.9;">Manage modules, create classes and monitor attendance.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('lecturer.add_class') }}" class="btn btn-light btn-lg"><i class="fas fa-plus me-2"></i>Create Class</a>
+                <a href="{{ url_for('lecturer.list_modules') }}" class="btn btn-outline-light btn-lg"><i class="fas fa-book me-2"></i>My Modules</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <a href="{{ url_for('lecturer.list_modules') }}" class="text-decoration-none">
+                <div class="card mini-card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle mb-2"><i class="fas fa-book"></i></div>
+                        <h6 class="mb-1">Modules</h6>
+                        <p class="text-muted mb-0">View and manage</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a href="{{ url_for('lecturer.list_classes') }}" class="text-decoration-none">
+                <div class="card mini-card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle mb-2"><i class="fas fa-chalkboard"></i></div>
+                        <h6 class="mb-1">Classes</h6>
+                        <p class="text-muted mb-0">Schedule & history</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a href="{{ url_for('lecturer.add_class') }}" class="text-decoration-none">
+                <div class="card mini-card shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="icon-circle mb-2"><i class="fas fa-qrcode"></i></div>
+                        <h6 class="mb-1">Create Class</h6>
+                        <p class="text-muted mb-0">Generate QR in seconds</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <!-- Today's Schedule -->
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Today's Schedule</h5>
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fa-regular fa-calendar-days me-2"></i>Today's Schedule</h5>
         </div>
         <div class="card-body p-0">
             {% set today = now.date() %}
@@ -62,9 +107,9 @@
 
     <!-- Upcoming Classes -->
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Upcoming Classes</h5>
-            <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fa-regular fa-calendar-days me-2"></i>Upcoming Classes</h5>
+            <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-sm btn-outline-light"><i class="fas fa-list me-1"></i>View All</a>
         </div>
         <div class="card-body p-0">
             {% if upcoming_classes %}
@@ -104,9 +149,9 @@
     <div class="row">
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Your Modules</h5>
-                    <a href="{{ url_for('lecturer.list_modules') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Your Modules</h5>
+                    <a href="{{ url_for('lecturer.list_modules') }}" class="btn btn-sm btn-outline-light"><i class="fas fa-list me-1"></i>View All</a>
                 </div>
                 <div class="card-body">
                     {% if modules %}
@@ -141,8 +186,8 @@
         <!-- Quick Stats -->
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Quick Stats</h5>
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Quick Stats</h5>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
@@ -232,7 +277,7 @@
         document.getElementById('qrcode').innerHTML = '<p class="text-muted">Generating QR code...</p>';
         
         // Make API call to generate QR code
-        fetch(`/api/classes/${classId}/qrcode`)
+        fetch(`/lecturer/api/classes/${classId}/qrcode`)
             .then(response => response.json())
             .then(data => {
                 // Display QR code

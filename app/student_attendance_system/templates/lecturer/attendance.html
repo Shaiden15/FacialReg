@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Class Attendance - FRAS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('lecturer.list_classes') }}">My Classes</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Attendance</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Class Attendance</h4>
+                <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Classes
+                </a>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>{{ class_session.module.code }} - {{ class_session.module.name }}</h5>
+                    <p class="mb-1"><strong>Date:</strong> {{ class_session.date.strftime('%A, %B %d, %Y') }}</p>
+                    <p class="mb-1"><strong>Time:</strong> {{ class_session.start_time.strftime('%I:%M %p') }} - {{ class_session.end_time.strftime('%I:%M %p') }}</p>
+                    <p class="mb-0"><strong>Total Students:</strong> {{ enrollments|length }}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="{{ url_for('lecturer.generate_qr_code', class_id=class_session.id) }}" class="btn btn-success">
+                        <i class="fas fa-qrcode me-1"></i> Generate QR Code
+                    </a>
+                    <button class="btn btn-primary" onclick="window.print()">
+                        <i class="fas fa-print me-1"></i> Print Attendance
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Status</th>
+                            <th>Time Recorded</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in enrollments %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ enrollment.student.username }}</td>
+                            <td>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</td>
+                            <td>
+                                {% if enrollment.id in attendance_records %}
+                                    {% set record = attendance_records[enrollment.id] %}
+                                    <span class="badge bg-success">Present</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Absent</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if enrollment.id in attendance_records %}
+                                    {{ attendance_records[enrollment.id].timestamp.strftime('%I:%M %p') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No students enrolled in this module.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 d-print-none">
+                <a href="{{ url_for('lecturer.list_classes') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Classes
+                </a>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i> Print Attendance
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .d-print-none {
+            display: none !important;
+        }
+        .card {
+            border: none;
+        }
+        .table {
+            width: 100%;
+        }
+        .badge {
+            border: 1px solid #000;
+            color: #000;
+            background-color: transparent !important;
+        }
+    }
+</style>
+{% endblock %}

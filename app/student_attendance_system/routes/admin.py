@@ -79,23 +79,33 @@ def add_user():
     return render_template('admin/add_user.html')
 
 @bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     
     if request.method == 'POST':
-        user.username = request.form.get('username')
-        user.email = request.form.get('email')
-        user.role = request.form.get('role')
-        user.first_name = request.form.get('first_name')
-        user.last_name = request.form.get('last_name')
+        # Only update fields that are provided in the form
+        if 'email' in request.form:
+            user.email = request.form['email']
+        if 'role' in request.form:
+            user.role = request.form['role']
+        if 'first_name' in request.form:
+            user.first_name = request.form['first_name'] or None
+        if 'last_name' in request.form:
+            user.last_name = request.form['last_name'] or None
         
+        # Only update password if a new one is provided
         password = request.form.get('password')
-        if password:
+        if password and password.strip():
             user.set_password(password)
         
-        db.session.commit()
-        flash('User updated successfully!', 'success')
-        return redirect(url_for('admin.list_users'))
+        try:
+            db.session.commit()
+            flash('User updated successfully!', 'success')
+            return redirect(url_for('admin.list_users'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating user: {str(e)}', 'danger')
     
     return render_template('admin/edit_user.html', user=user)
 

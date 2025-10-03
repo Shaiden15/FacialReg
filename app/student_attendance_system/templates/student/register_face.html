@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Register Your Face - FRAS{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Facial Registration</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Please follow these instructions for best results:
+                        <ul class="mt-2 mb-0">
+                            <li>Ensure good lighting on your face</li>
+                            <li>Remove any hats, glasses, or face coverings</li>
+                            <li>Look directly at the camera</li>
+                            <li>Keep a neutral expression</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <video id="video" width="640" height="480" autoplay class="img-fluid rounded border"></video>
+                        <canvas id="canvas" style="display:none;"></canvas>
+                    </div>
+                    
+                    <div id="status" class="text-center mb-3">
+                        <div class="spinner-border text-primary d-none" id="spinner" role="status">
+                            <span class="visually-hidden">Processing...</span>
+                        </div>
+                        <div id="message" class="alert d-none"></div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button id="captureBtn" class="btn btn-primary btn-lg">
+                            <i class="fas fa-camera me-2"></i> Capture & Register Face
+                        </button>
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const spinner = document.getElementById('spinner');
+    const messageDiv = document.getElementById('message');
+    
+    // Access webcam
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: 640, 
+            height: 480,
+            facingMode: 'user'
+        } 
+    })
+    .then(stream => {
+        video.srcObject = stream;
+        captureBtn.disabled = false;
+    })
+    .catch(err => {
+        console.error('Camera access failed:', err);
+        showMessage('Error accessing camera: ' + err.message, 'danger');
+    });
+    
+    captureBtn.addEventListener('click', function() {
+        // Set canvas size to match video
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        
+        // Draw current frame from video
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        // Show loading state
+        captureBtn.disabled = true;
+        spinner.classList.remove('d-none');
+        
+        // Convert canvas to blob and send to server
+        canvas.toBlob(blob => {
+            const formData = new FormData();
+            formData.append('image', blob, 'face.jpg');
+            
+            fetch("{{ url_for('student.register_face') }}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Face registered successfully!', 'success');
+                    // Redirect to dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('student.dashboard') }}";
+                    }, 2000);
+                } else {
+                    showMessage(data.message || 'Failed to register face. Please try again.', 'danger');
+                    captureBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('An error occurred. Please try again.', 'danger');
+                captureBtn.disabled = false;
+            })
+            .finally(() => {
+                spinner.classList.add('d-none');
+            });
+        }, 'image/jpeg', 0.9);
+    });
+    
+    function showMessage(text, type) {
+        messageDiv.textContent = text;
+        messageDiv.className = `alert alert-${type} d-block`;
+    }
+    
+    // Clean up video stream when leaving the page
+    window.addEventListener('beforeunload', function() {
+        if (video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+        }
+    });
+});
+</script>
+{% endblock %}

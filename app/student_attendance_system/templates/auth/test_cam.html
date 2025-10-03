@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Camera Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #video { background: #000; width: 100%; max-width: 640px; border-radius: 8px; }
+        #status { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .loading { background-color: #e2e3e5; color: #383d41; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #0d6efd; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Camera Test Page</h1>
+    <div>
+        <video id="video" width="640" height="480" autoplay playsinline></video>
+    </div>
+    <div id="status">Initializing camera...</div>
+    <button id="startBtn" class="btn btn-primary">Start Camera</button>
+    
+    <script>
+        const video = document.getElementById('video');
+        const statusDiv = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        let stream = null;
+
+        async function startCamera() {
+            statusDiv.className = 'loading';
+            statusDiv.textContent = 'Requesting camera access...';
+            
+            try {
+                // Stop any existing stream
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Try to get user media with different constraints
+                const constraints = {
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: false
+                };
+                
+                // Try to access camera
+                stream = await navigator.mediaDevices.getUserMedia(constraints)
+                    .catch(async (err) => {
+                        // If front camera fails, try environment camera
+                        if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+                            constraints.video.facingMode = { ideal: 'environment' };
+                            return navigator.mediaDevices.getUserMedia(constraints);
+                        }
+                        throw err;
+                    });
+                
+                // Set video source
+                video.srcObject = stream;
+                await video.play();
+                
+                statusDiv.className = 'success';
+                statusDiv.textContent = 'Camera is working!';
+                startBtn.textContent = 'Restart Camera';
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                statusDiv.className = 'error';
+                
+                let errorMessage = 'Camera Error: ';
+                if (error.name === 'NotAllowedError') {
+                    errorMessage += 'Permission denied. Please allow camera access in your browser settings.';
+                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    errorMessage += 'No camera found. Please connect a camera and try again.';
+                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                    errorMessage += 'Camera is already in use by another application.';
+                } else {
+                    errorMessage += error.message || 'Unknown error occurred';
+                }
+                
+                statusDiv.textContent = errorMessage;
+            }
+        }
+        
+        // Add click handler for start button
+        startBtn.addEventListener('click', startCamera);
+        
+        // Log browser info
+        console.log('Browser Info:', {
+            userAgent: navigator.userAgent,
+            isSecureContext: window.isSecureContext,
+            mediaDevices: !!navigator.mediaDevices,
+            getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
+        });
+        
+        // List available devices
+        async function logDevices() {
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                console.log('Available devices:', devices);
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                console.log('Video devices:', videoDevices);
+            } catch (error) {
+                console.error('Error enumerating devices:', error);
+            }
+        }
+        
+        // Initial device log
+        logDevices();
+    </script>
+</body>
+</html>
