@@ -4,8 +4,17 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import numpy as np
-import cv2
-import face_recognition
+
+# Conditional imports for face recognition (may not be available in production)
+try:
+    import cv2
+    import face_recognition
+    _FACE_LIBS_AVAILABLE = True
+except ImportError:
+    cv2 = None
+    face_recognition = None
+    _FACE_LIBS_AVAILABLE = False
+
 from ..extensions import db, bcrypt
 
 from ..models.database import User
