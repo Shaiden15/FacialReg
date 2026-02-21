@@ -5,17 +5,19 @@ from datetime import datetime, timedelta
 import qrcode
 from io import BytesIO
 import base64
-import cv2
 import numpy as np
 import logging
 from werkzeug.exceptions import BadRequest, Unauthorized, Forbidden
 
+# Conditional imports for face recognition (may not be available in production)
 try:
+    import cv2
     import face_recognition  # heavy optional dependency
-    _FACE_LIB_AVAILABLE = True
+    _FACE_LIBS_AVAILABLE = True
 except ImportError as e:
+    cv2 = None
     face_recognition = None
-    _FACE_LIB_AVAILABLE = False
+    _FACE_LIBS_AVAILABLE = False
     logging.warning(f"Face recognition library not available: {str(e)}")
 
 # Configure logging

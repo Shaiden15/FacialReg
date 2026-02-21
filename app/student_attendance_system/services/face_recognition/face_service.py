@@ -3,12 +3,20 @@ Face Recognition Service
 Handles all face detection and recognition operations
 """
 
-import cv2
 import numpy as np
-import face_recognition
 from PIL import Image
 import os
 from typing import List, Tuple, Optional
+
+# Conditional imports for face recognition (may not be available in production)
+try:
+    import cv2
+    import face_recognition
+    _FACE_LIBS_AVAILABLE = True
+except ImportError:
+    cv2 = None
+    face_recognition = None
+    _FACE_LIBS_AVAILABLE = False
 
 class FaceRecognitionService:
     """Service for face detection and recognition operations"""
@@ -16,9 +24,12 @@ class FaceRecognitionService:
     def __init__(self):
         self.known_face_encodings = []
         self.known_face_ids = []
-        self.face_cascade = cv2.CascadeClassifier(
-            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        )
+        self.face_cascade = None
+        
+        if _FACE_LIBS_AVAILABLE and cv2 is not None:
+            self.face_cascade = cv2.CascadeClassifier(
+                cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            )
     
     def detect_faces(self, image: np.ndarray) -> List[Tuple[int, int, int, int]]:
         """Detect faces in an image using OpenCV Haar cascades"""
