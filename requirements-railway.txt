@@ -11,7 +11,7 @@ Werkzeug==2.0.1
 # Database
 SQLAlchemy==1.4.23
 alembic==1.7.3
-psycopg2-binary==2.9.1
+PyMySQL==1.0.2
 
 # Authentication
 email-validator==1.1.3

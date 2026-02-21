@@ -10,8 +10,15 @@ class Config:
     def SQLALCHEMY_DATABASE_URI(self):
         database_url = os.environ.get('DATABASE_URL')
         if database_url:
-            # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
-            return database_url.replace('postgres://', 'postgresql://')
+            # Handle different database URL formats
+            if database_url.startswith('postgres://'):
+                # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+                return database_url.replace('postgres://', 'postgresql://')
+            elif database_url.startswith('mysql://'):
+                # MySQL URLs work as-is with PyMySQL
+                return database_url
+            else:
+                return database_url
         else:
             # Fallback to SQLite for local development
             return 'sqlite:///attendance.db'
