@@ -10,10 +10,17 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libopencv-dev \
     cmake \
+    libdlib-dev \
+    libx11-dev \
+    libopenblas-dev \
+    liblapack-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip and install wheel
+RUN pip install --upgrade pip setuptools wheel
+
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY requirements-railway.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
