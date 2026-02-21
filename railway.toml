@@ -6,6 +6,7 @@ healthcheckPath = "/"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
+startCommand = "python scripts/migrate.py && gunicorn run:app --bind 0.0.0.0:$PORT"
 
 [variables]
 FLASK_ENV = "production"

@@ -4,7 +4,18 @@ from datetime import timedelta
 class Config:
     # App
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-key-123'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///attendance.db'
+    
+    # Database - Read from environment variable
+    @property
+    def SQLALCHEMY_DATABASE_URI(self):
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url:
+            # Convert postgres:// to postgresql:// for SQLAlchemy compatibility
+            return database_url.replace('postgres://', 'postgresql://')
+        else:
+            # Fallback to SQLite for local development
+            return 'sqlite:///attendance.db'
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # File uploads
@@ -31,16 +42,19 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    # Railway PostgreSQL database
+    # Production uses environment variables only
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://') or \
-                             'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'app.db')
     
     # Production-specific settings
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or 'app/student_attendance_system/static/assets/uploads'
 
+class TestConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestConfig,
     'default': DevelopmentConfig
 }
