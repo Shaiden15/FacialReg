@@ -31,10 +31,13 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    # In production, use environment variables
+    # Railway PostgreSQL database
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://') or \
                              'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'app.db')
+    
+    # Production-specific settings
+    UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER') or 'app/student_attendance_system/static/assets/uploads'
 
 config = {
     'development': DevelopmentConfig,
