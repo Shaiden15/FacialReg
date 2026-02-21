@@ -56,7 +56,7 @@
                     <thead>
                         <tr>
                             <th>Student</th>
-                            <th>Student ID</th>
+                            <th>Username</th>
                             <th>Module</th>
                             <th>Module Code</th>
                             <th>Enrollment Date</th>
@@ -68,7 +68,7 @@
                         {% for enrollment in enrollments %}
                         <tr>
                             <td>{{ enrollment.student.first_name }} {{ enrollment.student.last_name }}</td>
-                            <td>{{ enrollment.student.student_id or 'N/A' }}</td>
+                            <td>{{ enrollment.student.username or 'N/A' }}</td>
                             <td>{{ enrollment.module.name }}</td>
                             <td>{{ enrollment.module.code }}</td>
                             <td>{{ enrollment.enrollment_date.strftime('%Y-%m-%d') if enrollment.enrollment_date else 'N/A' }}</td>

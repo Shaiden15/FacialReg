@@ -13,10 +13,12 @@ def create_app(config_name='default'):
     app = Flask(__name__)
     
     # Load configuration
-    from .config import config
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    from config.settings import config
     app.config.from_object(config[config_name])
     # Normalize upload folder to absolute path
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'uploads')
+    app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, 'static', 'assets', 'uploads')
     
     # Initialize extensions
     db.init_app(app)

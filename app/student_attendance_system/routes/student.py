@@ -67,12 +67,77 @@ def dashboard():
         Attendance.timestamp.desc()
     ).limit(5).all()
     
+     # Calculate attendance statistics per enrolled module (similar to view_attendance)
+    attendance_stats = []
+    try:
+        for enrollment in enrollments:
+            total_classes = Class.query.filter_by(module_id=enrollment.module_id).count()
+            attended = Attendance.query.join(
+                Class, Attendance.class_id == Class.id
+            ).filter(
+                Attendance.enrollment_id == enrollment.id
+            ).count()
+            percentage = (attended / total_classes * 100) if total_classes > 0 else 0
+            attendance_stats.append({
+                'module': enrollment.module,
+                'total_classes': total_classes,
+                'attended': attended,
+                'percentage': round(percentage, 2)
+            })
+    except Exception as e:
+        # If any error occurs, keep stats empty but don't break the dashboard
+        logger.warning(f"Error computing attendance_stats for dashboard: {str(e)}")
+        attendance_stats = []
+
+    # Build recent activity items for the UI
+    def _time_ago(dt):
+        try:
+            now_dt = datetime.now()
+            diff = now_dt - dt
+            seconds = int(diff.total_seconds())
+            if seconds < 60:
+                return f"{seconds}s ago"
+            minutes = seconds // 60
+            if minutes < 60:
+                return f"{minutes}m ago"
+            hours = minutes // 60
+            if hours < 24:
+                return f"{hours}h ago"
+            days = hours // 24
+            return f"{days}d ago"
+        except Exception:
+            return "recently"
+
+    recent_activity = []
+    try:
+        for att in recent_attendance:
+            # Safely get related class and module
+            try:
+                cls = Class.query.get(getattr(att, 'class_id', None))
+            except Exception:
+                cls = None
+            module_obj = getattr(cls, 'module', None) if cls else None
+            module_code = getattr(module_obj, 'code', None) or getattr(module_obj, 'name', 'Module') if module_obj else 'Module'
+            att_time = getattr(att, 'timestamp', datetime.now())
+            status = getattr(att, 'status', 'present')
+            recent_activity.append({
+                'type': 'attendance',
+                'title': 'Attendance Marked',
+                'time_ago': _time_ago(att_time),
+                'description': f"Marked as {status} for {module_code} on {att_time.strftime('%Y-%m-%d %H:%M')}"
+            })
+    except Exception as e:
+        logger.warning(f"Error building recent_activity for dashboard: {str(e)}")
+        recent_activity = []
+
     return render_template('student/dashboard.html',
                          enrollments=enrollments,
                          upcoming_classes=upcoming_classes,
                          today=datetime.now().date(),
                          now=datetime.now(),
-                         has_face_registered=has_face_registered)
+                         has_face_registered=has_face_registered,
+                         attendance_stats=attendance_stats,
+                         recent_activity=recent_activity)
 
 @bp.route('/classes')
 @login_required

@@ -27,7 +27,7 @@
   <div class="card shadow-sm border-0" style="border-radius: 16px; overflow: hidden;">
     <div class="row g-0 align-items-stretch">
       <div class="col-12 col-md-6">
-        <img src="{{ url_for('static', filename='images/dut-hero.jpg') }}" alt="Campus" class="img-fluid w-100 h-100" style="object-fit: cover; min-height: 260px;">
+        <img src="{{ url_for('static', filename='assets/images/dut-hero.jpg') }}" alt="Campus" class="img-fluid w-100 h-100" style="object-fit: cover; min-height: 260px;">
       </div>
       <div class="col-12 col-md-6 d-flex">
         <div class="p-4 p-md-5 d-flex flex-column justify-content-center w-100">
@@ -46,9 +46,6 @@
             {% else %}
               <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#authLoginModal">
                 <i class="fas fa-sign-in-alt me-2"></i>Login
-              </button>
-              <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#authRegisterModal">
-                <i class="fas fa-user-plus me-2"></i>Register
               </button>
             {% endif %}
           </div>

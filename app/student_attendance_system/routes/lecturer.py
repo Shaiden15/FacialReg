@@ -9,7 +9,7 @@ import os
 
 from ..extensions import db
 from ..models.database import Module, Class, Attendance, Enrollment, User, db
-from ..utils import allowed_file
+from ..services.utils import allowed_file
 
 bp = Blueprint('lecturer', __name__)
 

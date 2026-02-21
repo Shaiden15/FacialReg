@@ -56,3 +56,60 @@ Thumbs.db
 archive/
 migrations/
 .pytest_cache/
+
+# Flask specific
+*.flask
+flask_session/
+
+# Face recognition and ML models
+*.pkl
+*.h5
+*.pb
+*.tflite
+*.onnx
+models/
+face_models/
+haarcascades/
+dlib_models/
+shape_predictor_68_face_landmarks.dat
+dlib_face_recognition_resnet_model_v1.dat
+
+# Upload directories and media files
+uploads/
+static/uploads/
+media/
+temp/
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.mp4
+*.avi
+*.mov
+*.wmv
+
+# Jupyter Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Testing
+.tox/
+.nox/
+test-reports/
+
+# Documentation
+docs/_build/
+site/
+
+# Package manager
+Pipfile.lock
+poetry.lock

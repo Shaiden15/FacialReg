@@ -137,42 +137,44 @@
                 </div>
                 <div class="card-body p-0">
                     {% if upcoming_classes %}
-                        <div class="list-group list-group-flush">
-                            {% for class in upcoming_classes[:5] %}
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between">
-                                        <div>
-                                            <h6 class="mb-1">{{ class.module.name }}</h6>
-                                            <p class="mb-0 text-muted">
-                                                <i class="far fa-calendar me-1"></i> 
-                                                {{ class.date.strftime('%A, %b %d') }}
-                                                <span class="mx-2">•</span>
-                                                <i class="far fa-clock me-1"></i>
-                                                {{ class.start_time.strftime('%I:%M %p') }}
-                                                <span class="mx-1">-</span>
-                                                {{ class.end_time.strftime('%I:%M %p') }}
-                                            </p>
-                                        </div>
-                                        <div class="text-end">
-                                            <div class="mb-1">
-                                                {% set attendance = class.attendances|selectattr('enrollment.student_id', 'equalto', current_user.id)|first %}
-                                                {% if attendance %}
-                                                    <span class="badge bg-success">
-                                                        <i class="fas fa-check-circle me-1"></i> Present
-                                                    </span>
-                                                {% else %}
-                                                    <span class="badge bg-light text-muted border">
-                                                        <i class="far fa-clock me-1"></i> Upcoming
-                                                    </span>
-                                                {% endif %}
+                        <div class="upcoming-list">
+                            <div class="list-group list-group-flush">
+                                {% for class in upcoming_classes %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="mb-1">{{ class.module.name }}</h6>
+                                                <p class="mb-0 text-muted">
+                                                    <i class="far fa-calendar me-1"></i> 
+                                                    {{ class.date.strftime('%A, %b %d') }}
+                                                    <span class="mx-2">•</span>
+                                                    <i class="far fa-clock me-1"></i>
+                                                    {{ class.start_time.strftime('%I:%M %p') }}
+                                                    <span class="mx-1">-</span>
+                                                    {{ class.end_time.strftime('%I:%M %p') }}
+                                                </p>
                                             </div>
-                                            <small class="text-muted">
-                                                {{ class.location or 'Room TBD' }}
-                                            </small>
+                                            <div class="text-end">
+                                                <div class="mb-1">
+                                                    {% set attendance = class.attendances|selectattr('enrollment.student_id', 'equalto', current_user.id)|first %}
+                                                    {% if attendance %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-circle me-1"></i> Present
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="badge bg-light text-muted border">
+                                                            <i class="far fa-clock me-1"></i> Upcoming
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">
+                                                    {{ class.location or 'Room TBD' }}
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            {% endfor %}
+                                {% endfor %}
+                            </div>
                         </div>
                     {% else %}
                         <div class="text-center py-4">
@@ -191,27 +193,29 @@
                 </div>
                 <div class="card-body">
                     {% if attendance_stats %}
-                        {% for stat in attendance_stats %}
-                            <div class="mb-4">
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="fw-medium">{{ stat.module.code }}</span>
-                                    <span class="text-muted">{{ stat.attended }}/{{ stat.total_classes }}</span>
-                                </div>
-                                <div class="progress" style="height: 10px;">
-                                    {% set width = (stat.attended / stat.total_classes * 100) if stat.total_classes > 0 else 0 %}
-                                    <div class="progress-bar {% if width >= 80 %}bg-success{% elif width >= 60 %}bg-info{% else %}bg-warning{% endif %}" 
-                                         role="progressbar"
-                                         data-width="{{ width|round|int }}"
-                                         aria-valuenow="{{ width|round|int }}" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
+                        <div class="att-summary-list">
+                            {% for stat in attendance_stats %}
+                                <div class="mb-4">
+                                    <div class="d-flex justify-content-between mb-1">
+                                        <span class="fw-medium">{{ stat.module.code }}</span>
+                                        <span class="text-muted">{{ stat.attended }}/{{ stat.total_classes }}</span>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        {% set width = (stat.attended / stat.total_classes * 100) if stat.total_classes > 0 else 0 %}
+                                        <div class="progress-bar {% if width >= 80 %}bg-success{% elif width >= 60 %}bg-info{% else %}bg-warning{% endif %}" 
+                                             role="progressbar"
+                                             data-width="{{ width|round|int }}"
+                                             aria-valuenow="{{ width|round|int }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <div class="text-end mt-1">
+                                        <small class="text-muted">{{ stat.percentage|round(1) }}%</small>
                                     </div>
                                 </div>
-                                <div class="text-end mt-1">
-                                    <small class="text-muted">{{ stat.percentage|round(1) }}%</small>
-                                </div>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
                         <div class="text-center mt-3">
                             <a href="{{ url_for('student.view_attendance') }}" class="btn btn-sm btn-outline-primary">
                                 View Detailed Attendance

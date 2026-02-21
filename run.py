@@ -6,7 +6,7 @@ app = create_app()
 CORS(app)
 if __name__ == "__main__":
     # Set up the upload folder if it doesn't exist
-    upload_folder = os.path.join('app', 'student_attendance_system', 'static', 'uploads')
+    upload_folder = os.path.join('app', 'student_attendance_system', 'static', 'assets', 'uploads')
     os.makedirs(upload_folder, exist_ok=True)
     
     # Run the application
